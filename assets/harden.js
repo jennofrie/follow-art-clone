@@ -52,19 +52,40 @@
     '/api2/location':              '/assets/api-cache/location.json'
   };
 
+  // /api2-mock/content?page=<slug>  →  /assets/api-cache/content-<slug>.json
+  // Used by policy pages (cookies-policy, privacy-policy, terms-and-conditions).
+  // Nuxt throws "Page Not Found" if this fetch fails or returns a shape it can't destructure,
+  // so we must return the full {title, content, lastUpdated, metaTitle, metaDescription, metaKeywords} object.
+  function mockContentCache(urlStr) {
+    var u;
+    try { u = new URL(urlStr, location.href); } catch (e) { return null; }
+    if (u.pathname !== '/api2-mock/content') return null;
+    var page = u.searchParams.get('page');
+    if (!page) return null;
+    return '/assets/api-cache/content-' + page + '.json';
+  }
+
   // Endpoints that should return a stable empty response (not loaded from disk).
   // Pattern → JSON body returned with 200.
   var EMPTY_STUBS = [
-    { re: /\/api2-mock\/content(\?|$)/i,            body: '{"data":null,"content":null,"blocks":[]}' },
     { re: /\/api\/_nuxt_icon\/[^?]+(\?|$)/i,        body: '{"prefix":"","lastModified":0,"icons":{},"width":24,"height":24}' },
     { re: /\/api2\/[^?]+(\?|$)/i,                   body: '{"data":[],"items":[],"meta":{"total":0}}' }
   ];
 
-  var PAYLOAD_STUB = JSON.stringify({
-    data: {}, state: {}, once: [], _errors: {}, serverRendered: true,
-    config: { public: {}, app: { baseURL: '/', buildAssetsDir: '/_nuxt/', cdnURL: '' } },
-    prerenderedAt: Date.now()
-  });
+  // Nuxt 3 payloads use DEVALUE format (not plain JSON) — `{data:{},state:{}}` throws "Invalid input".
+  // Baseline empty devalue payload:
+  var PAYLOAD_STUB = '[{"data":1,"prerenderedAt":3},["ShallowReactive",2],{},' + Date.now() + ']';
+
+  // Map request URL → on-disk payload file. e.g. /cookies-policy/_payload.json → /assets/api-cache/payloads/cookies-policy-payload.json
+  function payloadFileFor(urlStr) {
+    try {
+      var u = new URL(urlStr, location.href);
+      var m = u.pathname.match(/^\/(?:([^/]+)\/)?_payload\.json$/);
+      if (!m) return null;
+      var slug = m[1] || 'index';
+      return '/assets/api-cache/payloads/' + slug + '-payload.json';
+    } catch (e) { return null; }
+  }
 
   var TRACKER_RE = /(googletagmanager\.com|google-analytics\.com|analytics\.google\.com|doubleclick\.net|connect\.facebook\.net|facebook\.com\/tr|widget\.trustpilot\.com|pagead2\.googlesyndication\.com|gstatic\.com\/recaptcha|google\.com\/recaptcha|google\.com\/ccm|cloudflareinsights\.com|cdn-cgi\/rum|cdn-cgi\/challenge-platform\/h\/g\/(jsd|cv|sn|world))/i;
 
@@ -101,7 +122,22 @@
         return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } });
       });
     }
+    var mockContent = mockContentCache(url);
+    if (mockContent) {
+      return origFetch(mockContent).catch(function () {
+        return new Response('{"title":"","content":"","lastUpdated":"","metaTitle":"","metaDescription":"","metaKeywords":""}', { status: 200, headers: { 'content-type': 'application/json' } });
+      });
+    }
     if (isPayload(url)) {
+      var pf = payloadFileFor(url);
+      if (pf) {
+        return origFetch(pf).then(function (r) {
+          if (!r.ok) return new Response(PAYLOAD_STUB, { status: 200, headers: { 'content-type': 'application/json' } });
+          return r;
+        }).catch(function () {
+          return new Response(PAYLOAD_STUB, { status: 200, headers: { 'content-type': 'application/json' } });
+        });
+      }
       return Promise.resolve(new Response(PAYLOAD_STUB, { status: 200, headers: { 'content-type': 'application/json' } }));
     }
     var empty = matchEmptyStub(url);
@@ -122,9 +158,10 @@
   XMLHttpRequest.prototype.send = function (body) {
     var self = this;
     var url = this.__harden_url || '';
-    if (TRACKER_RE.test(url) || isPayload(url) || matchApiCache(url) || matchEmptyStub(url)) {
+    if (TRACKER_RE.test(url) || isPayload(url) || matchApiCache(url) || matchEmptyStub(url) || mockContentCache(url)) {
       var cache = matchApiCache(url);
       var empty = matchEmptyStub(url);
+      var mc = mockContentCache(url);
       var respond = function (text) {
         try {
           Object.defineProperty(self, 'readyState', { value: 4, configurable: true });
@@ -138,8 +175,17 @@
       };
       if (cache) {
         fetch(cache).then(function (r) { return r.text(); }).then(respond).catch(function () { respond('{}'); });
+      } else if (mc) {
+        fetch(mc).then(function (r) { return r.text(); }).then(respond).catch(function () {
+          respond('{"title":"","content":"","lastUpdated":"","metaTitle":"","metaDescription":"","metaKeywords":""}');
+        });
       } else if (isPayload(url)) {
-        respond(PAYLOAD_STUB);
+        var pf2 = payloadFileFor(url);
+        if (pf2) {
+          fetch(pf2).then(function (r) { return r.text(); }).then(respond).catch(function () { respond(PAYLOAD_STUB); });
+        } else {
+          respond(PAYLOAD_STUB);
+        }
       } else if (empty) {
         respond(empty);
       } else {

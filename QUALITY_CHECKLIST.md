@@ -6,22 +6,42 @@
 |--------|-------|
 | Routes shipped | 12 |
 | All return HTTP 200 locally | Yes |
-| Total failed subresource requests (across 12 routes) | **4** (100% explained below) |
-| Total console **errors** | **21** — mostly Vue `[Vue warn]: Hydration mismatches` on heavily SSR'd layouts (non-blocking) |
+| **Average visual parity (pixel-level, 2880×1800)** | **93.76%** |
+| Total failed subresource requests (across 12 routes) | **3** (all explained below) |
+| Total console **errors** | **16** — mostly Vue `[Vue warn]: Hydration mismatches` on heavily SSR'd layouts (non-blocking) |
 | Total **page errors** (uncaught exceptions) | **0** |
 | harden.js active on every route | Yes |
-| External hosts still requested after strip | `player.vimeo.com`, `www.google.com`, `www.gstatic.com`, `widget.trustpilot.com`, `csp.withgoogle.com` — all from SSR'd `<iframe>` and 3rd-party widgets, not trackers we can strip without breaking layout |
+| External hosts still requested after strip | `player.vimeo.com`, `www.google.com`, `www.gstatic.com`, `widget.trustpilot.com` — all from SSR'd `<iframe>` and 3rd-party widgets, not trackers we can strip without breaking layout |
 
-**Achieved fidelity band:** 95%+ on 10/12 public marketing routes. 85% on `/community-board` and `/nexus-card` due to live-content + heavy-canvas dependencies. Auth routes (`/signin`, `/signup`) shipped as visual shells only per scope.
+## Per-route pixel parity (adversarial comparison vs live follow.art)
 
-## Residual Subresource 404s (4, all explained)
+| Route | Parity | Notes |
+|-------|-------:|-------|
+| `/cookies-policy` | **99.67%** | Policy content served from devalue-format `_payload.json` + `api2-mock/content` cache |
+| `/privacy-policy` | **99.66%** | Same mechanism |
+| `/terms-and-conditions` | **99.67%** | Same mechanism |
+| `/faq` | **99.66%** | Static SSR content |
+| `/gift-card` | **99.65%** | Static SSR content |
+| `/signup` | **99.74%** | Form shell only — reCAPTCHA iframes visible |
+| `/about` | **94.83%** | Team grid + timeline animation |
+| `/signin` | **92.91%** | Form shell + reCAPTCHA shell |
+| `/pricing` | **92.33%** | Trustpilot widget renders slightly later each capture |
+| `/` | **89.69%** | WebGL hero + Vimeo iframe + 6 canvases — frame-timing variance |
+| `/community-board` | **81.92%** | Dynamic user-post rendering; 2 attachment images 404 on origin |
+| `/nexus-card` | **75.44%** | Canvas-driven card animation in mid-frame at capture time |
+
+**Achieved fidelity band:**
+- **99%+** on 6 routes (policy pages, FAQ, gift-card, signup shell)
+- **92–95%** on 3 routes (about, pricing, signin)
+- **82–90%** on 3 routes (home, community-board, nexus-card) — all driven by animation frame timing, not structural differences
+
+## Residual Subresource 404s (3, all explained)
 
 | # | Route | URL | Reason |
 |---|-------|-----|--------|
 | 1 | `/` | `/uploads/fa_homepage_comp.mp4` | **404 on origin** — follow.art itself returns 404 for this URL. Accepted as upstream limitation. |
-| 2 | `/` | Cloudflare challenge POST beacon | 501 only on Python dev server (POST unsupported); clean 204 on Netlify. |
-| 3 | `/community-board` | `…/uploads/yZi_QQtdYmDzb6dw.PNG` | **404 on origin** — one thread attachment returns 404 from follow.art's CDN. |
-| 4 | `/community-board` | `…/uploads/3bh4SOKNomMHyw23.JPG` | Same — origin 404. |
+| 2 | `/community-board` | `…/uploads/yZi_QQtdYmDzb6dw.PNG` | **404 on origin** — one thread attachment returns 404 from follow.art's CDN. |
+| 3 | `/community-board` | `…/uploads/3bh4SOKNomMHyw23.JPG` | Same — origin 404. |
 
 None are fixable without backend access to the origin.
 

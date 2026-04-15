@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-04-15 — parity fix (93.76% avg)
+
+- Fixed `/cookies-policy`, `/privacy-policy`, `/terms-and-conditions` rendering as blank pages
+- Root cause: Nuxt 3 `_payload.json` uses **devalue** format, not plain JSON. My stub returned `{data:{},state:{}}` which threw `Invalid input` in the parser, which cascaded into `Nm: Page Not Found` in the policy page `setup()` hook
+- Fix: captured real devalue payloads per-route (cookies/privacy/terms got full content inline) + generated empty devalue stubs for routes where the origin 404'd the payload
+- Added `/assets/api-cache/payloads/` with 12 per-route payload JSONs
+- Added `/assets/api-cache/content-*.json` for `/api2-mock/content?page=*` stubs (extracted from SSR HTML with JSDOM)
+- Updated harden.js `fetch`/`XHR` interceptors to route `_payload.json` by slug and `api2-mock/content` by `?page=` query
+- Visual parity: policy pages went from **4–7%** to **99.67%**; average now **93.76%**
+
 ## 2026-04-15 — initial release
 
 - Cloned follow.art public marketing surface (12 routes) via mirror-first workflow
