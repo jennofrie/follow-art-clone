@@ -1,0 +1,1 @@
+import{_ as e}from"./DlAUqK2U.js";import{o as t,a as o,r as n}from"./8gaUAh2V.js";const _={},c={class:"text-class-ellipsis"};function r(s,a){return t(),o("span",c,[n(s.$slots,"default")])}const p=Object.assign(e(_,[["render",r]]),{__name:"TextEllipsis"});export{p as _};

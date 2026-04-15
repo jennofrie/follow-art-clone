@@ -1,0 +1,1 @@
+import{X as n}from"./8gaUAh2V.js";var r=(e=>(e.CARD_INCOMPLETE="card_incomplete",e.UNKNOWN="unknown_error",e))(r||{});const a=e=>e[0]?.$message===r.CARD_INCOMPLETE?(n("/card/edit?incomplete=1"),!0):!1;export{a as h};

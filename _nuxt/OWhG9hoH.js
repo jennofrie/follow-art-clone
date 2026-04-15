@@ -1,0 +1,1 @@
+import{P as l,B as b,aZ as r}from"./8gaUAh2V.js";function u(s){const t=r(0),a=r(0);{let o;const n=new ResizeObserver(e=>{const i=e[0]?.borderBoxSize?.[0];i&&(t.value=i.inlineSize,a.value=i.blockSize)}),c=e=>{o&&(n.unobserve(o),o=void 0),e&&(n.observe(e),o=e)};l(()=>{n.disconnect()}),s instanceof HTMLElement?c(s):b(r(s),c)}return{width:t,height:a}}export{u};

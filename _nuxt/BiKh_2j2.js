@@ -1,0 +1,1 @@
+import{i as n,b as e}from"./CE9Ncdms.js";import{d as t,aa as c,o as _,c as a,k as m}from"./8gaUAh2V.js";const p=t({__name:"FormErrors",setup(u){const r=c("errors",[]),o=n("",r);return(i,E)=>{const s=e;return _(),a(s,{errors:m(o),class:"pb-0.5"},null,8,["errors"])}}}),x=Object.assign(p,{__name:"FormErrors"});export{x as _};

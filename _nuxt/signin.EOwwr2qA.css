@@ -1,0 +1,1 @@
+@layer components{.sign-in-form{display:flex;flex:1;flex-direction:column}.sign-in-form>.layout-split{flex:1;min-height:auto}}@layer components{.sign-in-page .scrollable__area-inner{display:flex;flex-direction:column}}

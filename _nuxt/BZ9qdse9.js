@@ -1,0 +1,1 @@
+import{_ as t}from"./DlAUqK2U.js";import{o,a as s,r as n}from"./8gaUAh2V.js";const _={},c={class:"text"};function r(e,a){return o(),s("div",c,[n(e.$slots,"default")])}const f=Object.assign(t(_,[["render",r]]),{__name:"TextBlock"});export{f as _};
